@@ -1269,80 +1269,268 @@ Assertions หลังเพิ่ม : 17
 ## แบบทดสอบ
 1. สร้าง API เพิ่มเติม เพื่อรองรับการ CheckIn โดยมีการระบุ ID ของการจอง เพื่อใช้ CheckIn และใช้การจำลองข้อมูล JSON (ทำ Mockup) เพื่อส่ง Response ผลการ CheckIn กลับไป (นักศึกษาออกแบบ API ของตนเอง และให้เพิ่ม Comment ใน Code ให้ใส่ชื่อ และรหัสนักศึกษาเพื่อระบุว่าแก้ไขโดยใคร)
    ```
-   // ===============================
-// CheckIn API
-// แก้ไขโดย: Suteemon Wongparram
-// รหัสนักศึกษา: 68030300
-// ===============================
-app.post('/api/checkin/:bookingId', (req, res) => {
+   /**
+ * @swagger
+ * /api/checkin/{id}:
+ *   post:
+ *     summary: CheckIn ลูกค้าที่จองห้องพัก
+ *     description: ใช้ booking ID เพื่อทำการ CheckIn และส่งผลลัพธ์กลับแบบ Mock JSON
+ *     tags: [CheckIn]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID ของการจอง
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: CheckIn สำเร็จ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: CheckIn สำเร็จ
+ *                 bookingId:
+ *                   type: integer
+ *                   example: 1
+ *                 roomNumber:
+ *                   type: string
+ *                   example: A101
+ *                 checkinTime:
+ *                   type: string
+ *                   example: 2026-03-10T10:30:00.000Z
+ *       404:
+ *         description: ไม่พบข้อมูลการจอง
+ */
 
-  const bookingId = parseInt(req.params.bookingId);
+/*
+แก้ไขโดย:
+ชื่อ: นางสาวสุธีมนต์ วงศ์พระราม
+รหัสนักศึกษา: 68030300
+*/
 
-  // mockup response
-  const response = {
-    checkinId: 1001,
-    bookingId: bookingId,
-    room: "A101",
-    checkinTime: new Date(),
-    status: "checked-in"
-  };
+// POST /api/checkin/:id — ทำการ CheckIn (Mock Response)
+app.post('/api/checkin/:id', authenticateToken, (req, res) => {
 
-  res.status(200).json(response);
+  const bookingId = req.params.id;
+
+  // ตรวจสอบว่ามี booking จริงหรือไม่
+  db.get('SELECT * FROM bookings WHERE id = ?', [bookingId], (err, row) => {
+
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    if (!row) {
+      return res.status(404).json({ error: 'ไม่พบข้อมูลการจอง' });
+    }
+
+    // Mock JSON Response (จำลองข้อมูล)
+    const mockResponse = {
+      message: "CheckIn สำเร็จ",
+      bookingId: bookingId,
+      guestName: row.fullname,
+      roomNumber: "A101",
+      checkinTime: new Date().toISOString(),
+      status: "checked-in"
+    };
+
+    res.json(mockResponse);
+
+  });
+
 });
+![ผลลัพธ์การทดลอง](images/CheckIn.png)
    ```
    
-2. สร้าง API เพิ่มเติม เพื่อรองรับการ CheckOut โดยมีการระบ ID ของการ CheckIn เพื่อใช้ทำการ CheckOut และใช้การจำลองข้อมูล JSON (ทำ Mockup) เพื่อส่งรายละเอียดของการ CheckOut กลับไป (นักศึกษาออกแบบ API และ JSON ของตนเอง และให้เพิ่ม Comment ใน Code ให้ใส่ชื่อ และรหัสนักศึกษาเพื่อระบุว่าแก้ไขโดยใคร)
+1. สร้าง API เพิ่มเติม เพื่อรองรับการ CheckOut โดยมีการระบ ID ของการ CheckIn เพื่อใช้ทำการ CheckOut และใช้การจำลองข้อมูล JSON (ทำ Mockup) เพื่อส่งรายละเอียดของการ CheckOut กลับไป (นักศึกษาออกแบบ API และ JSON ของตนเอง และให้เพิ่ม Comment ใน Code ให้ใส่ชื่อ และรหัสนักศึกษาเพื่อระบุว่าแก้ไขโดยใคร)
    ```
-   // ===============================
-// CheckOut API
-// แก้ไขโดย: Suteemon Wongparram
-// รหัสนักศึกษา: 68030300
-// ===============================
-app.post('/api/checkout/:checkinId', (req, res) => {
+/*
+แก้ไขโดย:
+ชื่อ: นางสาวสุธีมนต์ วงศ์พระราม
+รหัสนักศึกษา: 68030300
+*/
 
-  const checkinId = parseInt(req.params.checkinId);
+/**
+ * @swagger
+ * /api/checkout/{id}:
+ *   post:
+ *     summary: CheckOut ลูกค้าที่เข้าพัก
+ *     description: ใช้ CheckIn ID เพื่อทำการ CheckOut และส่งข้อมูล Mock JSON กลับ
+ *     tags: [CheckOut]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID ของการ CheckIn
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: CheckOut สำเร็จ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: CheckOut สำเร็จ
+ *                 checkinId:
+ *                   type: integer
+ *                   example: 1
+ *                 roomNumber:
+ *                   type: string
+ *                   example: A101
+ *                 checkoutTime:
+ *                   type: string
+ *                   example: 2026-03-14T12:30:00.000Z
+ *                 totalPrice:
+ *                   type: number
+ *                   example: 3500
+ *                 status:
+ *                   type: string
+ *                   example: checked-out
+ *       404:
+ *         description: ไม่พบข้อมูลการ CheckIn
+ */
 
-  const response = {
-    checkoutId: 5001,
-    checkinId: checkinId,
-    checkoutTime: new Date(),
-    totalPrice: 2000,
-    status: "pending-confirm"
-  };
+app.post('/api/checkout/:id', authenticateToken, (req, res) => {
 
-  res.status(200).json(response);
+  const checkinId = req.params.id;
+
+  db.get('SELECT * FROM bookings WHERE id = ?', [checkinId], (err, row) => {
+
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    if (!row) {
+      return res.status(404).json({ error: 'ไม่พบข้อมูลการ CheckIn' });
+    }
+
+    const mockCheckout = {
+      message: "CheckOut สำเร็จ",
+      checkinId: checkinId,
+      guestName: row.fullname,
+      roomNumber: "A101",
+      checkoutTime: new Date().toISOString(),
+      totalPrice: 3500,
+      paymentStatus: "paid",
+      status: "checked-out"
+    };
+
+    res.json(mockCheckout);
+
+  });
+
 });
+![ผลลัพธ์การทดลอง](images/CheckOut.png)
    ```
    
-3. สร้าง API เพิ่มเติม เพื่อรองรับการ ConfirmCheckOut (เพิ่ม Comment ใน Code ให้ใส่ชื่อ และรหัสนักศึกษาเพื่อระบุว่าแก้ไขโดยใคร)
+1. สร้าง API เพิ่มเติม เพื่อรองรับการ ConfirmCheckOut (เพิ่ม Comment ใน Code ให้ใส่ชื่อ และรหัสนักศึกษาเพื่อระบุว่าแก้ไขโดยใคร)
 
    ```
-   // ===============================
-// Confirm CheckOut API
-// แก้ไขโดย: Suteemon Wongparram
-// รหัสนักศึกษา: 68030300
-// ===============================
-app.post('/api/confirm-checkout/:checkoutId', (req, res) => {
+/*
+แก้ไขโดย:
+ชื่อ: นางสาวสุธีมนต์ วงศ์พระราม
+รหัสนักศึกษา: 68030300
+*/
 
-  const checkoutId = parseInt(req.params.checkoutId);
+/**
+ * @swagger
+ * /api/confirm-checkout/{id}:
+ *   post:
+ *     summary: Confirm การ CheckOut ของลูกค้า
+ *     description: ยืนยันการ CheckOut หลังจากลูกค้าชำระเงินและคืนห้องเรียบร้อย
+ *     tags: [CheckOut]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID ของการ CheckOut
+ *         example: 1
+ *     responses:
+ *       200:
+ *         description: Confirm CheckOut สำเร็จ
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: Confirm CheckOut สำเร็จ
+ *                 checkoutId:
+ *                   type: integer
+ *                   example: 1
+ *                 roomNumber:
+ *                   type: string
+ *                   example: A101
+ *                 confirmTime:
+ *                   type: string
+ *                   example: 2026-03-14T13:00:00.000Z
+ *                 status:
+ *                   type: string
+ *                   example: checkout-confirmed
+ *       404:
+ *         description: ไม่พบข้อมูลการ CheckOut
+ */
 
-  const response = {
-    checkoutId: checkoutId,
-    confirmed: true,
-    message: "Checkout completed successfully"
-  };
+app.post('/api/confirm-checkout/:id', authenticateToken, (req, res) => {
 
-  res.status(200).json(response);
+  const checkoutId = req.params.id;
+
+  db.get('SELECT * FROM bookings WHERE id = ?', [checkoutId], (err, row) => {
+
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    if (!row) {
+      return res.status(404).json({ error: 'ไม่พบข้อมูลการ CheckOut' });
+    }
+
+    const mockConfirmCheckout = {
+      message: "Confirm CheckOut สำเร็จ",
+      checkoutId: checkoutId,
+      guestName: row.fullname,
+      roomNumber: "A101",
+      confirmTime: new Date().toISOString(),
+      paymentStatus: "completed",
+      status: "checkout-confirmed"
+    };
+
+    res.json(mockConfirmCheckout);
+
+  });
+
 });
+
+![ผลลัพธ์การทดลอง](images/ConfirmCheckOut.png)
    ```
       
-4. แก้ไข Swagger และ Newman เพื่อทดสอบการทำงาน
+3. แก้ไข Swagger และ Newman เพื่อทดสอบการทำงาน
    ```
-   บันทึกรูปผลการทำงานของ Swagger
+![บันทึกรูปผลการทำงานของ Swagger](images/newmen.png)
    ```
    
    ```
-   บันทึกรูปผลการทำงานของ newman
+![บันทึกรูปผลการทำงานของ newman](images/Swagger.png)
    ```
    
 
